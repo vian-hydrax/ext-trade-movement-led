@@ -25,9 +25,10 @@
     const grp = (ico, label, kids) => '<div class="menu-item top group disabled"><span class="ico">' + ico + '</span>' + esc(label) + '<span class="chev">▾</span></div>' + kids;
     const pending = SIApp.pendingCount();
     const out = ROUTE.parts[1] === 'outgoing-movement' && p0 === 'movement-management';
+    const inc = ROUTE.parts[1] === 'incoming-movement' && p0 === 'movement-management';
     return top('✓', 'Approvals', '#/approvals', p0 === 'approvals', pending || '') + div +
       top('☰', 'Account Management') + top('☷', 'User Management') + top('▦', 'Report Management') + top('▣', 'Venue Management') +
-      grp('⇄', 'Movement Management', sub('Incoming Movement') + sub('Outgoing Movement', '#/movement-management/outgoing-movement/fiat', out)) +
+      grp('⇄', 'Movement Management', sub('Incoming Movement', '#/movement-management/incoming-movement/fiat', inc) + sub('Outgoing Movement', '#/movement-management/outgoing-movement/fiat', out)) +
       grp('⇄', 'Transaction Management', sub('Deposit') + sub('Withdrawal') + sub('Rebalances') + sub('Settlement Instructions')) +
       top('‹›', 'Webhook Management') + div + top('⚙', 'System') + top('⇪', 'Batch Import') + top('≣', 'Audit Logs') + div +
       '<div class="menu-label">Prototype only</div>' + top('▤', 'Balances', '#/balances', p0 === 'balances') + top('⚑', 'Demo controls', '#/demo', p0 === 'demo');
@@ -54,7 +55,7 @@
       if (!app) { Shell.active = 'shell'; return { title: 'Not found', crumbs: ['Dashboard', 'Approvals'], buttons: '', html: '<div class="empty">Request not found. <a href="#/approvals">Back</a></div>' }; }
       Shell.active = app.name; app.setRoute(ROUTE); return app.requestDetail(p[1]);
     }
-    if (p[0] === 'movement-management' && p[1] !== 'outgoing-movement') { location.replace('#/movement-management/outgoing-movement/fiat'); return null; }
+    if (p[0] === 'movement-management' && p[1] !== 'outgoing-movement' && p[1] !== 'incoming-movement') { location.replace('#/movement-management/outgoing-movement/fiat'); return null; }
     const app = ['balances', 'demo', 'movement-management'].includes(p[0]) ? SIApp : null;
     if (!app) { location.replace('#/movement-management/outgoing-movement/fiat'); return null; }
     Shell.active = app.name; app.setRoute(ROUTE);
@@ -70,7 +71,7 @@
     const crumbs = (view.crumbs || []).map((c, i, a) => i < a.length - 1 ? '<a>' + esc(c) + '</a>' : esc(c)).join(' / ');
     document.getElementById('app').innerHTML =
       '<div class="sider' + (isOp() ? ' dark' : '') + '"><div class="logo"><span>◆</span> ' + (isOp() ? 'Operator UI' : 'Asset Management') + '</div><div class="menu">' + menuHtml() + '</div></div>' +
-      '<div class="main"><div class="topbar"><div class="demo-note">Prototype: movement-led outgoing (book, classify, approve). Today in the demo: <b>' + esc(SIApp.today()) + '</b> <button class="btn btn-sm" data-shell-act="advDay">Advance 1 day</button></div>' +
+      '<div class="main"><div class="topbar"><div class="demo-note">Prototype: movement-led outgoing (book, classify, approve), plus incoming Others for correcting entries. Today in the demo: <b>' + esc(SIApp.today()) + '</b> <button class="btn btn-sm" data-shell-act="advDay">Advance 1 day</button></div>' +
       '<div class="right"><label>View as</label><select class="select" id="user-switch" style="width:260px">' + USERS.map(u => '<option value="' + u.id + '"' + (u.id === Shell.cur.id ? ' selected' : '') + '>' + esc(u.label) + '</option>').join('') + '</select>' +
       '<button class="btn" data-shell-act="resetDemo">Reset demo data</button></div></div>' +
       '<div class="page-head"><div class="breadcrumb">' + crumbs + '</div><div class="title-row"><div><div class="page-title">' + esc(view.title) + '</div>' +
@@ -88,6 +89,8 @@
 
   const root = document.getElementById('app');
   root.addEventListener('click', (e) => {
+    const row = Shell.active === 'shell' && e.target.closest('[data-href]');
+    if (row) { location.hash = row.dataset.href; return; }
     const b = e.target.closest('[data-shell-act]');
     if (!b) return;
     if (b.dataset.shellAct === 'advDay') { SIApp.advance(1); SIApp.toast({ title: 'Date advanced', desc: 'Simulated date is now ' + SIApp.today() + '.' }); render(); }
